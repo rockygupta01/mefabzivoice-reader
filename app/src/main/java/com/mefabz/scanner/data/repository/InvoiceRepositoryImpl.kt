@@ -16,46 +16,63 @@ class InvoiceRepositoryImpl @Inject constructor(
     override suspend fun parseInvoice(imageBytes: ByteArray): ParseInvoiceResult {
         return try {
             val response = dataSource.parseInvoice(imageBytes)
-            if (!response.brandDetected) {
-                return ParseInvoiceResult.Error(InvoiceError.NonMefabz)
-            }
+            internalParse(response)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
 
-            val products = response.products
-                .map(::cleanProduct)
-                .filter(String::isNotBlank)
-                .filterNot(::looksLikeNonProductLine)
+    override suspend fun parseInvoice(bitmap: android.graphics.Bitmap): ParseInvoiceResult {
+        return try {
+            val response = dataSource.parseInvoiceBitmap(bitmap)
+            internalParse(response)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
 
-            if (products.isEmpty()) {
-                return ParseInvoiceResult.Error(InvoiceError.NoProducts)
-            }
+    private fun internalParse(response: com.mefabz.scanner.data.remote.dto.OcrInvoiceResponse): ParseInvoiceResult {
+        if (!response.brandDetected) {
+            return ParseInvoiceResult.Error(InvoiceError.NonMefabz)
+        }
 
-            val pageNumber = sanitizePageNumber(response.pageNumber)
-                ?: return ParseInvoiceResult.Error(InvoiceError.BlurryInvoice)
+        val products = response.products
+            .map(::cleanProduct)
+            .filter(String::isNotBlank)
+            .filterNot(::looksLikeNonProductLine)
 
-            ParseInvoiceResult.Success(
-                ParsedInvoice(
-                    products = products,
-                    pageNumber = pageNumber
+        if (products.isEmpty()) {
+            return ParseInvoiceResult.Error(InvoiceError.NoProducts)
+        }
+
+        val pageNumber = sanitizePageNumber(response.pageNumber)
+            ?: return ParseInvoiceResult.Error(InvoiceError.BlurryInvoice)
+
+        return ParseInvoiceResult.Success(
+            ParsedInvoice(
+                products = products,
+                pageNumber = pageNumber
+            )
+        )
+    }
+
+    private fun handleError(exception: Exception): ParseInvoiceResult {
+        val message = exception.message.orEmpty()
+        return if (
+            message.contains("blur", ignoreCase = true) ||
+            message.contains("no text found", ignoreCase = true)
+        ) {
+            ParseInvoiceResult.Error(InvoiceError.BlurryInvoice)
+        } else {
+            ParseInvoiceResult.Error(
+                InvoiceError.ApiFailure(
+                    message = if (message.isBlank()) {
+                        "Failed to parse invoice"
+                    } else {
+                        message
+                    }
                 )
             )
-        } catch (exception: Exception) {
-            val message = exception.message.orEmpty()
-            if (
-                message.contains("blur", ignoreCase = true) ||
-                message.contains("no text found", ignoreCase = true)
-            ) {
-                ParseInvoiceResult.Error(InvoiceError.BlurryInvoice)
-            } else {
-                ParseInvoiceResult.Error(
-                    InvoiceError.ApiFailure(
-                        message = if (message.isBlank()) {
-                            "Failed to parse invoice"
-                        } else {
-                            message
-                        }
-                    )
-                )
-            }
         }
     }
 
@@ -94,7 +111,13 @@ class InvoiceRepositoryImpl @Inject constructor(
 
     private fun sanitizePageNumber(raw: String): String? {
         val trimmed = raw.trim()
-        if (trimmed.matches(Regex("^\\d+$"))) {
+        // Allow digits, spaces, '/', 'of', 'Page'
+        // But we ideally want just the number. 
+        // If OcrDataSource returns "1", we are good.
+        // If it returns "1 of 2", we might want "1" or "1 of 2".
+        // The display UI just shows "Page X".
+        // Let's allow any non-empty string that starts with a digit or "Page"
+        if (trimmed.isNotEmpty()) {
             return trimmed
         }
         return null

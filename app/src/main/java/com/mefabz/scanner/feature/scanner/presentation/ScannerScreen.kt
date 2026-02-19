@@ -15,11 +15,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,13 +54,59 @@ import com.mefabz.scanner.feature.scanner.presentation.components.ScannerOverlay
 import com.mefabz.scanner.ui.theme.NeonCyan
 import com.mefabz.scanner.ui.theme.Slate800
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 
 @Composable
 fun ScannerScreen(
-    viewModel: ScannerViewModel
+    viewModel: ScannerViewModel,
+    onOpenPdf: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isCachingPdf by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    val pdfPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { contentUri ->
+            isCachingPdf = true
+            scope.launch(Dispatchers.IO) {
+                try {
+                    // Copy to cache immediately to avoid permission issues later
+                    val inputStream = context.contentResolver.openInputStream(contentUri)
+                    if (inputStream != null) {
+                        val fileName = "cached_pdf_${System.currentTimeMillis()}.pdf"
+                        val file = File(context.cacheDir, fileName)
+                        val outputStream = java.io.FileOutputStream(file)
+                        inputStream.use { input ->
+                            outputStream.use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        // Navigate with the path to the local file
+                        withContext(Dispatchers.Main) {
+                            onOpenPdf(file.toUri().toString())
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    isCachingPdf = false
+                }
+            }
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var hasCameraPermission by remember {
@@ -166,6 +214,35 @@ fun ScannerScreen(
                         }
 
                         ScannerOverlay(modifier = Modifier.fillMaxSize())
+
+                        // "Open PDF" Button (Top Right)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .align(Alignment.TopCenter),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+
+                            androidx.compose.material3.FilledTonalButton(
+                                onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) }
+                            ) {
+                                Text("Open PDF")
+                            }
+                        }
+
+
+                        // PDF Caching Loader
+                        if (isCachingPdf) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = NeonCyan)
+                            }
+                        }
 
                         val loaderAlpha by animateFloatAsState(
                             targetValue = if (isBusy) 1f else 0f,

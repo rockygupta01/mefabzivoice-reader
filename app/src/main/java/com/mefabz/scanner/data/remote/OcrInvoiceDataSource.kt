@@ -50,6 +50,34 @@ class OcrInvoiceDataSource @Inject constructor() {
         )
     }
 
+    suspend fun parseInvoiceBitmap(bitmap: android.graphics.Bitmap): OcrInvoiceResponse {
+        val image = InputImage.fromBitmap(bitmap, 0)
+        val visionText = recognizer.processAwait(image)
+
+        val lines = visionText.textBlocks
+            .flatMap { block -> block.lines.map { line -> RecognizedLine(line.text, line.boundingBox) } }
+            .map { line ->
+                line.copy(
+                    text = line.text
+                        .replace(Regex("\\s+"), " ")
+                        .trim()
+                )
+            }
+            .filter { it.text.isNotBlank() }
+
+        if (lines.isEmpty()) {
+            throw IllegalStateException("No text found in invoice image")
+        }
+
+        val brandDetected = lines.any { normalizedForBrand(it.text).contains("mefabz") }
+
+        return OcrInvoiceResponse(
+            brandDetected = brandDetected,
+            products = extractProductCandidates(lines, bitmap.height),
+            pageNumber = extractFooterPageNumber(lines, bitmap.height).orEmpty()
+        )
+    }
+
     private fun extractProductCandidates(lines: List<RecognizedLine>, imageHeight: Int): List<String> {
         val topLimit = (imageHeight * 0.12f).toInt()
         val bottomLimit = (imageHeight * 0.88f).toInt()
@@ -68,22 +96,41 @@ class OcrInvoiceDataSource @Inject constructor() {
     }
 
     private fun extractFooterPageNumber(lines: List<RecognizedLine>, imageHeight: Int): String? {
-        val footerStart = (imageHeight * 0.82f).toInt()
-        val strictPageNumberPattern = Regex("^\\d+$")
-
-        val footerCandidate = lines
+        // Look at bottom 20% of the page
+        val footerStart = (imageHeight * 0.80f).toInt()
+        
+        // Prioritize lines at the bottom
+        val footerLines = lines
             .filter { line -> (line.box?.centerY() ?: Int.MIN_VALUE) >= footerStart }
-            .map { it.text.trim() }
-            .firstOrNull { strictPageNumberPattern.matches(it) }
+            .sortedByDescending { line -> line.box?.centerY() ?: 0 }
 
-        if (footerCandidate != null) {
-            return footerCandidate
+        for (line in footerLines) {
+            val text = line.text.trim()
+            
+            // 1. "Page 1 of 5" or "Page 1"
+            // Matches: "Page 1", "Page: 1", "Page 1 of 5", "Pg 1"
+            val pageMatch = Regex("(?i)^(?:Page|Pg|P)[:.]?\\s*(\\d+)(?:\\s*(?:of|/)\\s*\\d+)?").find(text)
+            if (pageMatch != null) {
+                return pageMatch.groupValues[1]
+            }
+
+            // 2. "1 of 5" or "1/5"
+            val fractionMatch = Regex("^(\\d+)\\s*(?:of|/)\\s*\\d+").find(text)
+            if (fractionMatch != null) {
+                return fractionMatch.groupValues[1]
+            }
+
+            // 3. Just digits "1"
+            if (text.matches(Regex("^\\d+$"))) {
+                return text
+            }
         }
 
-        return lines
-            .asReversed()
+        // Fallback: Check lines from bottom up if they are just digits
+        // This helps if the "1" is a standalone line at the very bottom
+        return lines.asReversed()
             .map { it.text.trim() }
-            .firstOrNull { strictPageNumberPattern.matches(it) }
+            .firstOrNull { it.matches(Regex("^\\d+$")) }
     }
 
     private fun cleanProductCandidate(raw: String): String {

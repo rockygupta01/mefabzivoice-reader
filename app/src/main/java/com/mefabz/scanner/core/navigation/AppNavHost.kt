@@ -35,7 +35,12 @@ fun AppNavHost(
         startDestination = AppDestination.Scanner.route
     ) {
         composable(AppDestination.Scanner.route) {
-            ScannerScreen(viewModel = viewModel)
+            ScannerScreen(
+                viewModel = viewModel,
+                onOpenPdf = { uri ->
+                    navController.navigate(AppDestination.PdfReader.createRoute(uri))
+                }
+            )
         }
 
         composable(AppDestination.Result.route) {
@@ -43,6 +48,19 @@ fun AppNavHost(
                 viewModel = viewModel,
                 onScanAnother = {
                     viewModel.resetForRescan()
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(AppDestination.PdfReader.route) { backStackEntry ->
+            val uriArg = backStackEntry.arguments?.getString("uri") ?: return@composable
+            val uri = java.net.URLDecoder.decode(uriArg, "UTF-8")
+            // We need a separate ViewModel for PDF Reader, or we can use hiltViewModel() inside the screen
+            // The screen already uses hiltViewModel(), so we just pass the uri
+            com.mefabz.scanner.feature.pdfreader.presentation.PdfReaderScreen(
+                uri = uri,
+                onNavigateBack = {
                     navController.popBackStack()
                 }
             )
