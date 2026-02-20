@@ -22,6 +22,19 @@ class SettingsViewModel @Inject constructor(
             initialValue = "en-US" // Default backup
         )
 
+    val isDarkMode: StateFlow<Boolean> = userPreferencesRepository.isDarkModeFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true // Default to Dark mode
+        )
+
+    fun onThemeChanged(isDark: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveThemeMode(isDark)
+        }
+    }
+
     fun onLanguageAccentChanged(newAccentCode: String) {
         viewModelScope.launch {
             userPreferencesRepository.saveLanguageAccent(newAccentCode)

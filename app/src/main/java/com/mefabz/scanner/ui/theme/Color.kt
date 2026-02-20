@@ -9,3 +9,8 @@ val NeonCyan = Color(0xFF00E7FF)
 val NeonIndigo = Color(0xFF6366F1)
 val Ink = Color(0xFFE2E8F0)
 val ErrorRed = Color(0xFFFF4D6D)
+
+// Light Theme Colors
+val LightBackground = Color(0xFFF1F5F9)
+val LightSurface = Color(0xFFFFFFFF)
+val LightInk = Color(0xFF0F172A)

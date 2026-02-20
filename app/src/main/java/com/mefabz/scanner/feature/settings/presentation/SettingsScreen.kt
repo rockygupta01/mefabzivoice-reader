@@ -2,6 +2,7 @@ package com.mefabz.scanner.feature.settings.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,10 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -38,12 +42,13 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val currentAccent by viewModel.currentLanguageAccent.collectAsStateWithLifecycle()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Black // Consistent dark theme for the app
+        containerColor = MaterialTheme.colorScheme.background // Adapt to theme
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -54,7 +59,7 @@ fun SettingsScreen(
         ) {
             Text(
                 text = "Settings",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -114,6 +119,41 @@ fun SettingsScreen(
                     }
                 }
             )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Appearance",
+                color = NeonCyan,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Dark Theme",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 16.sp,
+                )
+                Switch(
+                    checked = isDarkMode,
+                    onCheckedChange = { viewModel.onThemeChanged(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = NeonCyan,
+                    )
+                )
+            }
         }
     }
 }
@@ -141,7 +181,7 @@ private fun LanguageOptionRow(
         )
         Text(
             text = label,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 16.sp,
             modifier = Modifier.padding(start = 12.dp)
         )
