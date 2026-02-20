@@ -75,6 +75,14 @@ class GoogleTtsManager @Inject constructor(
         }
     }
 
+    fun setSpeechRate(rate: Float) {
+        try {
+            textToSpeech?.setSpeechRate(rate)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun speak(text: String, utteranceId: String = DEFAULT_UTTERANCE_ID) {
         if (!isReady.get()) return
         textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)

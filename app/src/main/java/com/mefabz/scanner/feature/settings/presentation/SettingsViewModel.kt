@@ -29,6 +29,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = true // Default to Dark mode
         )
 
+    val speechRate: StateFlow<Float> = userPreferencesRepository.speechRateFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 1.0f
+        )
+
     fun onThemeChanged(isDark: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.saveThemeMode(isDark)
@@ -38,6 +45,12 @@ class SettingsViewModel @Inject constructor(
     fun onLanguageAccentChanged(newAccentCode: String) {
         viewModelScope.launch {
             userPreferencesRepository.saveLanguageAccent(newAccentCode)
+        }
+    }
+
+    fun onSpeechRateChanged(rate: Float) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveSpeechRate(rate)
         }
     }
 }

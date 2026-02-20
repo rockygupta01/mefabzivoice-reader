@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -228,7 +230,7 @@ fun PdfReaderScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Slate800),
+                .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -239,8 +241,31 @@ fun PdfReaderScreen(
                     PdfPagePreview(bitmap = uiState.pageBitmap!!)
                 }
 
+                if (!uiState.isLoading && uiState.pageCount == 0 && uiState.error == null) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "No PDF",
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No PDF Selected",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Please select a document to start reading",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(color = NeonCyan)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 } else if (uiState.error != null) {
                     // If no bitmap, show full screen error
                     if (uiState.pageBitmap == null) {
@@ -270,13 +295,13 @@ fun PdfReaderScreen(
                             .padding(16.dp),
                         shape = RoundedCornerShape(20.dp),
                         colors = androidx.compose.material3.CardDefaults.cardColors(
-                            containerColor = Slate800.copy(alpha = 0.90f)
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                         )
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 "Page: ${uiState.detectedInvoicePage}",
-                                color = NeonCyan,
+                                color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -285,7 +310,7 @@ fun PdfReaderScreen(
                                 Spacer(Modifier.height(4.dp))
                                 Text(
                                     "Color: ${colors.joinToString(", ")}",
-                                    color = NeonCyan,
+                                    color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -297,7 +322,7 @@ fun PdfReaderScreen(
                                 itemsIndexed(uiState.detectedProducts) { index, product ->
                                     val highlighted = uiState.activeProductIndex == index
                                     val animatedColor by androidx.compose.animation.animateColorAsState(
-                                        targetValue = if (highlighted) NeonCyan else Ink,
+                                        targetValue = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                         label = "color"
                                     )
                                     Text(

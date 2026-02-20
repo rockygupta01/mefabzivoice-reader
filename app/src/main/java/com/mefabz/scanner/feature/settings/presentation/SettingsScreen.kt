@@ -12,11 +12,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.SnackbarHost
@@ -29,6 +34,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,20 +50,24 @@ fun SettingsScreen(
 ) {
     val currentAccent by viewModel.currentLanguageAccent.collectAsStateWithLifecycle()
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val speechRate by viewModel.speechRate.collectAsStateWithLifecycle()
+    
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background // Adapt to theme
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .statusBarsPadding()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
         ) {
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "Settings",
                 color = MaterialTheme.colorScheme.onBackground,
@@ -66,93 +77,169 @@ fun SettingsScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                text = "Voice Narration Accent",
-                color = NeonCyan,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // US English Option
-            LanguageOptionRow(
-                label = "US English (Default)",
-                isSelected = currentAccent == "en-US",
-                onClick = {
-                    if (currentAccent != "en-US") {
-                        viewModel.onLanguageAccentChanged("en-US")
-                        scope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar("Accent changed to US English")
-                        }
-                    }
-                }
-            )
-
-            // Indian English Option
-            LanguageOptionRow(
-                label = "Indian English",
-                isSelected = currentAccent == "en-IN",
-                onClick = {
-                    if (currentAccent != "en-IN") {
-                        viewModel.onLanguageAccentChanged("en-IN")
-                        scope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar("Accent changed to Indian English")
-                        }
-                    }
-                }
-            )
-
-            // Hindi Option
-            LanguageOptionRow(
-                label = "Hindi",
-                isSelected = currentAccent == "hi-IN",
-                onClick = {
-                    if (currentAccent != "hi-IN") {
-                        viewModel.onLanguageAccentChanged("hi-IN")
-                        scope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            snackbarHostState.showSnackbar("Accent changed to Hindi")
-                        }
-                    }
-                }
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // Appearance Section
             Text(
                 text = "Appearance",
                 color = NeonCyan,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Dark Theme",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 16.sp,
-                )
-                Switch(
-                    checked = isDarkMode,
-                    onCheckedChange = { viewModel.onThemeChanged(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                        checkedTrackColor = NeonCyan,
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Dark Theme",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
                     )
-                )
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { 
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.onThemeChanged(it) 
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = NeonCyan,
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Voice Narration Accent Section
+            Text(
+                text = "Voice Narration Accent",
+                color = NeonCyan,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+            )
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    LanguageOptionRow(
+                        label = "US English (Default)",
+                        isSelected = currentAccent == "en-US",
+                        onClick = {
+                            if (currentAccent != "en-US") {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.onLanguageAccentChanged("en-US")
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("Accent changed to US English")
+                                }
+                            }
+                        }
+                    )
+                    LanguageOptionRow(
+                        label = "Indian English",
+                        isSelected = currentAccent == "en-IN",
+                        onClick = {
+                            if (currentAccent != "en-IN") {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.onLanguageAccentChanged("en-IN")
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("Accent changed to Indian English")
+                                }
+                            }
+                        }
+                    )
+                    LanguageOptionRow(
+                        label = "Hindi",
+                        isSelected = currentAccent == "hi-IN",
+                        onClick = {
+                            if (currentAccent != "hi-IN") {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.onLanguageAccentChanged("hi-IN")
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("Accent changed to Hindi")
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Speech Speed Section
+            Text(
+                text = "Speech Speed",
+                color = NeonCyan,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+            )
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                ) {
+                    val rateString = String.format(java.util.Locale.US, "%.1fx", speechRate)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Reading Speed",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = rateString,
+                            color = NeonCyan,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Slider(
+                        value = speechRate,
+                        onValueChange = { viewModel.onSpeechRateChanged(it) },
+                        onValueChangeFinished = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        },
+                        valueRange = 0.5f..2.0f,
+                        steps = 14,
+                        colors = SliderDefaults.colors(
+                            thumbColor = NeonCyan,
+                            activeTrackColor = NeonCyan,
+                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -168,7 +255,7 @@ private fun LanguageOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(vertical = 12.dp),
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
@@ -181,9 +268,10 @@ private fun LanguageOptionRow(
         )
         Text(
             text = label,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 16.sp,
-            modifier = Modifier.padding(start = 12.dp)
+            modifier = Modifier.padding(start = 12.dp),
+            fontWeight = FontWeight.Medium
         )
     }
 }

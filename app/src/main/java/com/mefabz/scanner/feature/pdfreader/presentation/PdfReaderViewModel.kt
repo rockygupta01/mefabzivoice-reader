@@ -278,7 +278,9 @@ class PdfReaderViewModel @Inject constructor(
     private fun speak(text: String) {
         viewModelScope.launch {
             val languageCode = userPreferencesRepository.languageAccentFlow.first()
+            val speechRate = userPreferencesRepository.speechRateFlow.first()
             ttsManager.setLanguage(languageCode)
+            ttsManager.setSpeechRate(speechRate)
             ttsManager.speak(text, PDF_UTTERANCE_ID)
         }
     }
