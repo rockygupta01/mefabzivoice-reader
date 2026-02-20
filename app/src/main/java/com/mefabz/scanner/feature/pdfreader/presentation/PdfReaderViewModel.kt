@@ -196,16 +196,11 @@ class PdfReaderViewModel @Inject constructor(
             parsePage(pageIndex, bitmap)
         }
 
-        val validPrefixes = userPreferencesRepository.invoicePrefixesFlow.first()
-            .split(",").map { it.trim().uppercase() }.filter { it.isNotBlank() }.ifEmpty { listOf("MEFABZ") }
-        val firstPrefix = validPrefixes.first()
-
         when (result) {
             is ParseInvoiceResult.Success -> {
                 val narrationResult = buildNarrationUseCase(
                     products = result.invoice.products,
-                    pageNumber = result.invoice.pageNumber,
-                    brandName = firstPrefix
+                    pageNumber = result.invoice.pageNumber
                 )
                 activeNarrationRanges = narrationResult.productRanges
                 _uiState.update {

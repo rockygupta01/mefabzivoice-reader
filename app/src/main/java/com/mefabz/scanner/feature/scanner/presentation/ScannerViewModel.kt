@@ -68,11 +68,9 @@ class ScannerViewModel @Inject constructor(
 
             when (val result = parseInvoiceUseCase(imageBytes)) {
                 is ParseInvoiceResult.Success -> {
-                    val firstPrefix = validPrefixesFlow.first().firstOrNull() ?: "MEFABZ"
                     val narrationResult = buildNarrationUseCase(
                         result.invoice.products,
-                        result.invoice.pageNumber,
-                        firstPrefix
+                        result.invoice.pageNumber
                     )
                     _uiState.update {
                         it.copy(
