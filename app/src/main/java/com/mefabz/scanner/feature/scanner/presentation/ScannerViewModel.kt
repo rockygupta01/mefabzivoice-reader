@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mefabz.scanner.core.dispatcher.IoDispatcher
 import com.mefabz.scanner.core.tts.GoogleTtsManager
 import com.mefabz.scanner.core.tts.TtsListener
+import com.mefabz.scanner.data.repository.UserPreferencesRepository
 import com.mefabz.scanner.domain.model.InvoiceError
 import com.mefabz.scanner.domain.model.ParseInvoiceResult
 import com.mefabz.scanner.domain.usecase.BuildNarrationUseCase
@@ -12,6 +13,7 @@ import com.mefabz.scanner.domain.usecase.ParseInvoiceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,6 +28,7 @@ class ScannerViewModel @Inject constructor(
     private val parseInvoiceUseCase: ParseInvoiceUseCase,
     private val buildNarrationUseCase: BuildNarrationUseCase,
     private val ttsManager: GoogleTtsManager,
+    private val userPreferencesRepository: UserPreferencesRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel(), TtsListener {
 
@@ -89,7 +92,11 @@ class ScannerViewModel @Inject constructor(
 
         _uiState.update { it.copy(speechState = SpeechState.Speaking(activeProductIndex = null)) }
 
-        ttsManager.speak(narrationPayload.narration)
+        viewModelScope.launch {
+            val languageCode = userPreferencesRepository.languageAccentFlow.first()
+            ttsManager.setLanguage(languageCode)
+            ttsManager.speak(narrationPayload.narration)
+        }
     }
 
     fun stopNarration() {

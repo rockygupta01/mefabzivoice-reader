@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mefabz.scanner.core.tts.GoogleTtsManager
 import com.mefabz.scanner.core.tts.TtsListener
+import com.mefabz.scanner.data.repository.UserPreferencesRepository
 import com.mefabz.scanner.domain.model.InvoiceError
 import com.mefabz.scanner.domain.model.ParseInvoiceResult
 import com.mefabz.scanner.domain.repository.InvoiceRepository
@@ -13,6 +14,7 @@ import com.mefabz.scanner.feature.pdfreader.domain.PdfContentManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +41,8 @@ class PdfReaderViewModel @Inject constructor(
     private val pdfContentManager: PdfContentManager,
     private val ttsManager: GoogleTtsManager,
     private val invoiceRepository: InvoiceRepository,
-    private val buildNarrationUseCase: BuildNarrationUseCase
+    private val buildNarrationUseCase: BuildNarrationUseCase,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel(), TtsListener {
 
     private val _uiState = MutableStateFlow(PdfReaderUiState())
@@ -265,7 +268,11 @@ class PdfReaderViewModel @Inject constructor(
     }
 
     private fun speak(text: String) {
-        ttsManager.speak(text, PDF_UTTERANCE_ID)
+        viewModelScope.launch {
+            val languageCode = userPreferencesRepository.languageAccentFlow.first()
+            ttsManager.setLanguage(languageCode)
+            ttsManager.speak(text, PDF_UTTERANCE_ID)
+        }
     }
 
     override fun onStart(utteranceId: String) {

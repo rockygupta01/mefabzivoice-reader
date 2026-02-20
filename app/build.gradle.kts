@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.google.material)
     implementation(libs.androidx.navigation.compose)
+    implementation("androidx.compose.material:material-icons-core:1.7.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)

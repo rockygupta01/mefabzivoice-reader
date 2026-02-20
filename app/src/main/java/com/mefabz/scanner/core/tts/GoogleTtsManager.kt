@@ -61,6 +61,20 @@ class GoogleTtsManager @Inject constructor(
         this.listener = listener
     }
 
+    fun setLanguage(languageCode: String) {
+        val locale = if (languageCode == "en-IN") {
+            Locale("en", "IN")
+        } else {
+            Locale.US
+        }
+        
+        try {
+            textToSpeech?.language = locale
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun speak(text: String, utteranceId: String = DEFAULT_UTTERANCE_ID) {
         if (!isReady.get()) return
         textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)

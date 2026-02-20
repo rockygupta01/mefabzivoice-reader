@@ -6,4 +6,5 @@ sealed class AppDestination(val route: String) {
     data object PdfReader : AppDestination("pdf_reader/{uri}") {
         fun createRoute(uri: String): String = "pdf_reader/${java.net.URLEncoder.encode(uri, "UTF-8")}"
     }
+    data object Settings : AppDestination("settings")
 }

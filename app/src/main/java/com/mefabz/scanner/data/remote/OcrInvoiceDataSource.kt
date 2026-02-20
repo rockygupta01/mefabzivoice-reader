@@ -17,6 +17,11 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 @Singleton
 class OcrInvoiceDataSource @Inject constructor() {
 
+    private val colorTruncationRegex = Regex(
+        listOf("black", "white", "green", "grey", "gray", "brown", "red", "cream", "blue", "yellow", "pink", "purple", "orange")
+            .joinToString("|", prefix = "(?i)\\b(", postfix = ")\\b\\s*[)\\]]?")
+    )
+
     private val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     suspend fun parseInvoice(imageBytes: ByteArray): OcrInvoiceResponse {
@@ -125,6 +130,11 @@ class OcrInvoiceDataSource @Inject constructor() {
             .replace(Regex("^\\d+[.)-]?\\s*"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
+
+        val colorMatch = colorTruncationRegex.find(cleaned)
+        if (colorMatch != null) {
+            cleaned = cleaned.substring(0, colorMatch.range.last + 1).trim()
+        }
 
         val currencyIndex = cleaned.indexOfFirst { it == '$' || it == '₹' || it == '€' }
         if (currencyIndex > 0) {
