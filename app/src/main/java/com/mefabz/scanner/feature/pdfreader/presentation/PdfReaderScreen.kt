@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mefabz.scanner.feature.scanner.presentation.components.VoiceWaveform
+import com.mefabz.scanner.feature.scanner.presentation.components.buildColorHighlightedString
 import com.mefabz.scanner.ui.theme.Ink
 import com.mefabz.scanner.ui.theme.NeonCyan
 import com.mefabz.scanner.ui.theme.Slate800
@@ -228,8 +229,7 @@ fun PdfReaderScreen(
                                         label = "color"
                                     )
                                     Text(
-                                        text = product,
-                                        color = animatedColor,
+                                        text = buildColorHighlightedString(product, animatedColor),
                                         fontWeight = if (highlighted) FontWeight.Bold else FontWeight.Normal,
                                         modifier = Modifier.padding(vertical = 8.dp)
                                     )

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.mefabz.scanner.feature.scanner.presentation.components.VoiceWaveform
+import com.mefabz.scanner.feature.scanner.presentation.components.buildColorHighlightedString
 import com.mefabz.scanner.ui.theme.Ink
 import com.mefabz.scanner.ui.theme.NeonCyan
 import com.mefabz.scanner.ui.theme.Slate800
@@ -136,11 +137,10 @@ fun ResultScreen(
                     )
 
                     Text(
-                        text = product,
+                        text = buildColorHighlightedString(product, animatedColor),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = animatedPadding),
-                        color = animatedColor,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (highlighted) FontWeight.Bold else FontWeight.Normal
                     )
