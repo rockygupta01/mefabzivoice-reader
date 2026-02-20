@@ -99,6 +99,21 @@ fun SettingsScreen(
                     }
                 }
             )
+
+            // Hindi Option
+            LanguageOptionRow(
+                label = "Hindi",
+                isSelected = currentAccent == "hi-IN",
+                onClick = {
+                    if (currentAccent != "hi-IN") {
+                        viewModel.onLanguageAccentChanged("hi-IN")
+                        scope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar("Accent changed to Hindi")
+                        }
+                    }
+                }
+            )
         }
     }
 }

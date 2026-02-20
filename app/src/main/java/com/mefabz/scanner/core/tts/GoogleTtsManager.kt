@@ -62,10 +62,10 @@ class GoogleTtsManager @Inject constructor(
     }
 
     fun setLanguage(languageCode: String) {
-        val locale = if (languageCode == "en-IN") {
-            Locale("en", "IN")
-        } else {
-            Locale.US
+        val locale = when (languageCode) {
+            "en-IN" -> Locale("en", "IN")
+            "hi-IN" -> Locale("hi", "IN")
+            else -> Locale.US
         }
         
         try {
