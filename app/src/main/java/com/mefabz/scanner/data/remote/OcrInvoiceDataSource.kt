@@ -91,6 +91,7 @@ class OcrInvoiceDataSource @Inject constructor() {
             .map { cleanProductCandidate(it.text) }
             .filter(String::isNotBlank)
             .filterNot(::isLikelyNonProductLine)
+            .filter { it.trim().uppercase().startsWith("MEFABZ") }
             .distinct()
             .toList()
     }
@@ -107,27 +108,13 @@ class OcrInvoiceDataSource @Inject constructor() {
         for (line in footerLines) {
             val text = line.text.trim()
             
-            // 1. "Page 1 of 5" or "Page 1"
-            // Matches: "Page 1", "Page: 1", "Page 1 of 5", "Pg 1"
-            val pageMatch = Regex("(?i)^(?:Page|Pg|P)[:.]?\\s*(\\d+)(?:\\s*(?:of|/)\\s*\\d+)?").find(text)
-            if (pageMatch != null) {
-                return pageMatch.groupValues[1]
-            }
-
-            // 2. "1 of 5" or "1/5"
-            val fractionMatch = Regex("^(\\d+)\\s*(?:of|/)\\s*\\d+").find(text)
-            if (fractionMatch != null) {
-                return fractionMatch.groupValues[1]
-            }
-
-            // 3. Just digits "1"
+            // STRICT PAGE NUMBER RULE: Only ever a single number string
             if (text.matches(Regex("^\\d+$"))) {
                 return text
             }
         }
 
-        // Fallback: Check lines from bottom up if they are just digits
-        // This helps if the "1" is a standalone line at the very bottom
+        // Fallback: Check lines from bottom up if they are strictly digits
         return lines.asReversed()
             .map { it.text.trim() }
             .firstOrNull { it.matches(Regex("^\\d+$")) }
@@ -208,7 +195,10 @@ class OcrInvoiceDataSource @Inject constructor() {
             "page",
             "terms",
             "payment",
-            "thank you"
+            "thank you",
+            "sku",
+            "qty",
+            "quantity"
         )
         if (blockedPhrases.any(lower::contains)) {
             return true
@@ -219,6 +209,11 @@ class OcrInvoiceDataSource @Inject constructor() {
         }
 
         if (Regex("""\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b""").containsMatchIn(line)) {
+            return true
+        }
+        
+        // Strict price check for lines that are just numbers with decimals or currency symbols
+        if (line.matches(Regex("^[\\$€₹£]?\\s*\\d+(?:[.,]\\d{1,2})?\\s*[\\$€₹£]?$"))) {
             return true
         }
 

@@ -105,6 +105,7 @@ class PdfContentManager @Inject constructor(
         val height = (page.height * scale).toInt()
         
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(android.graphics.Color.WHITE) // Fill background for OCR
         
         val matrix = android.graphics.Matrix().apply {
             postScale(scale, scale)

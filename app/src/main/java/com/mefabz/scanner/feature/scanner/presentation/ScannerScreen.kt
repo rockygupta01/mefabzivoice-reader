@@ -12,6 +12,7 @@ import androidx.camera.core.Preview
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +21,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -42,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,11 +63,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
-
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 
 @Composable
 fun ScannerScreen(
@@ -106,7 +106,6 @@ fun ScannerScreen(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var hasCameraPermission by remember {
@@ -172,181 +171,169 @@ fun ScannerScreen(
 
     val isBusy = uiState.scanState is ScanState.Capturing || uiState.scanState is ScanState.Processing
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(Color.Black)
     ) {
-        Text(
-            text = "MEFABZ Scanner",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "Invoice Voice Reader",
-            style = MaterialTheme.typography.titleMedium,
-            color = NeonCyan.copy(alpha = 0.9f)
-        )
-
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            if (hasCameraPermission) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = CardDefaults.cardColors(containerColor = Slate800)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        previewSurfaceRequest?.let { request ->
-                            CameraXViewfinder(
-                                surfaceRequest = request,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-
-                        ScannerOverlay(modifier = Modifier.fillMaxSize())
-
-                        // "Open PDF" Button (Top Right)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .align(Alignment.TopCenter),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-
-                            androidx.compose.material3.FilledTonalButton(
-                                onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) }
-                            ) {
-                                Text("Open PDF")
-                            }
-                        }
-
-
-                        // PDF Caching Loader
-                        if (isCachingPdf) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = NeonCyan)
-                            }
-                        }
-
-                        val loaderAlpha by animateFloatAsState(
-                            targetValue = if (isBusy) 1f else 0f,
-                            label = "processing_alpha"
-                        )
-
-                        if (loaderAlpha > 0f) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .alpha(loaderAlpha)
-                                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.72f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    CircularProgressIndicator(color = NeonCyan)
-                                    Text(
-                                        text = if (uiState.scanState is ScanState.Capturing) {
-                                            "Capturing invoice..."
-                                        } else {
-                                            "Analyzing invoice..."
-                                        },
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        fontSize = 15.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
+        if (hasCameraPermission) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                previewSurfaceRequest?.let { request ->
+                    CameraXViewfinder(
+                        surfaceRequest = request,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-            } else {
-                Card(
-                    modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(28.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Camera permission is required to scan invoices",
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                            Text("Grant Camera Permission")
-                        }
-                    }
-                }
+
+                ScannerOverlay(modifier = Modifier.fillMaxSize())
             }
-        }
-
-        AnimatedVisibility(visible = uiState.scanState is ScanState.Error) {
-            val reason = (uiState.scanState as? ScanState.Error)?.reason
-            if (reason != null) {
-                ErrorCard(message = viewModel.errorLabel(reason))
-            }
-        }
-
-        Button(
-            onClick = {
-                if (!hasCameraPermission || isBusy) return@Button
-                val outputFile = File(context.cacheDir, "invoice_${System.currentTimeMillis()}.jpg")
-                val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
-
-                viewModel.onCaptureStarted()
-                imageCapture.takePicture(
-                    outputOptions,
-                    ContextCompat.getMainExecutor(context),
-                    object : ImageCapture.OnImageSavedCallback {
-                        override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                            val imageBytes = outputFile.readBytes()
-                            val imageUri = outputFile.toUri().toString()
-                            viewModel.processCapturedInvoice(imageBytes, imageUri)
-                        }
-
-                        override fun onError(exception: ImageCaptureException) {
-                            viewModel.onCaptureFailed()
-                        }
-                    }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Camera permission is required to scan invoices",
+                    color = Color.White
                 )
-            },
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                    Text("Grant Camera Permission")
+                }
+            }
+        }
+
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(58.dp),
-            enabled = hasCameraPermission && !isBusy,
-            colors = ButtonDefaults.buttonColors(containerColor = NeonCyan),
-            shape = RoundedCornerShape(18.dp)
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(20.dp)
         ) {
             Text(
-                text = "Scan MEFABZ Invoice",
-                color = MaterialTheme.colorScheme.onPrimary,
+                text = "MEFABZ Scanner",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Invoice Voice Reader",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                color = NeonCyan.copy(alpha = 0.9f)
             )
         }
 
-        Spacer(modifier = Modifier.width(2.dp))
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .fillMaxWidth()
+                .padding(bottom = 32.dp, start = 24.dp, end = 24.dp)
+        ) {
+            androidx.compose.material3.FloatingActionButton(
+                onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
+                modifier = Modifier.align(Alignment.CenterEnd),
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Text("PDF", fontWeight = FontWeight.Bold)
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .align(Alignment.Center)
+                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    .clickable(
+                        enabled = hasCameraPermission && !isBusy,
+                        onClick = {
+                            val outputFile = File(context.cacheDir, "invoice_${System.currentTimeMillis()}.jpg")
+                            val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
+
+                            viewModel.onCaptureStarted()
+                            imageCapture.takePicture(
+                                outputOptions,
+                                ContextCompat.getMainExecutor(context),
+                                object : ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                                        val imageBytes = outputFile.readBytes()
+                                        val imageUri = outputFile.toUri().toString()
+                                        viewModel.processCapturedInvoice(imageBytes, imageUri)
+                                    }
+
+                                    override fun onError(exception: ImageCaptureException) {
+                                        viewModel.onCaptureFailed()
+                                    }
+                                }
+                            )
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(if (isBusy) Color.Gray else NeonCyan, CircleShape)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 140.dp, start = 20.dp, end = 20.dp)
+        ) {
+            AnimatedVisibility(visible = uiState.scanState is ScanState.Error) {
+                val reason = (uiState.scanState as? ScanState.Error)?.reason
+                if (reason != null) {
+                    ErrorCard(message = viewModel.errorLabel(reason))
+                }
+            }
+        }
+
+        if (isCachingPdf) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = NeonCyan)
+            }
+        }
+
+        val loaderAlpha by animateFloatAsState(
+            targetValue = if (isBusy) 1f else 0f,
+            label = "processing_alpha"
+        )
+
+        if (loaderAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(loaderAlpha)
+                    .background(Color.Black.copy(alpha = 0.72f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(color = NeonCyan)
+                    Text(
+                        text = if (uiState.scanState is ScanState.Capturing) {
+                            "Capturing invoice..."
+                        } else {
+                            "Analyzing invoice..."
+                        },
+                        color = Color.White,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+        }
     }
 }
 

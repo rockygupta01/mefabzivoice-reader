@@ -111,13 +111,8 @@ class InvoiceRepositoryImpl @Inject constructor(
 
     private fun sanitizePageNumber(raw: String): String? {
         val trimmed = raw.trim()
-        // Allow digits, spaces, '/', 'of', 'Page'
-        // But we ideally want just the number. 
-        // If OcrDataSource returns "1", we are good.
-        // If it returns "1 of 2", we might want "1" or "1 of 2".
-        // The display UI just shows "Page X".
-        // Let's allow any non-empty string that starts with a digit or "Page"
-        if (trimmed.isNotEmpty()) {
+        // STRICT RULE: Must be only digits
+        if (trimmed.matches(Regex("^\\d+$"))) {
             return trimmed
         }
         return null

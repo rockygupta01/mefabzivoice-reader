@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.material3.Button
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mefabz.scanner.feature.scanner.presentation.components.VoiceWaveform
+import com.mefabz.scanner.ui.theme.Ink
 import com.mefabz.scanner.ui.theme.NeonCyan
 import com.mefabz.scanner.ui.theme.Slate800
 
@@ -121,7 +123,7 @@ fun PdfReaderScreen(
                          enabled = !uiState.isLoading && uiState.pageBitmap != null
                     ) {
                         Text(
-                            text = if (uiState.isReading) "Stop Reading" else "Read MEFABZ Page",
+                            text = if (uiState.isReading) "Stop Reading" else "Read Current Page",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
@@ -198,10 +200,44 @@ fun PdfReaderScreen(
                     }
                 }
                 
-                // Overlay for non-blocking error/info if needed
-                 if (uiState.extractedText == null && !uiState.isLoading && uiState.error == null && uiState.pageBitmap != null) {
-                     // Indicate that this page hasn't been scanned/read yet or is ready
-                 }
+                if (uiState.detectedProducts.isNotEmpty()) {
+                    androidx.compose.material3.Card(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = androidx.compose.material3.CardDefaults.cardColors(
+                            containerColor = Slate800.copy(alpha = 0.90f)
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Page: ${uiState.detectedInvoicePage}",
+                                color = NeonCyan,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            androidx.compose.foundation.lazy.LazyColumn(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                itemsIndexed(uiState.detectedProducts) { index, product ->
+                                    val highlighted = uiState.activeProductIndex == index
+                                    val animatedColor by androidx.compose.animation.animateColorAsState(
+                                        targetValue = if (highlighted) NeonCyan else Ink,
+                                        label = "color"
+                                    )
+                                    Text(
+                                        text = product,
+                                        color = animatedColor,
+                                        fontWeight = if (highlighted) FontWeight.Bold else FontWeight.Normal,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
