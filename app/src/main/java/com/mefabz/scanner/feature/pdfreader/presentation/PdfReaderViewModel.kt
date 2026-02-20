@@ -141,6 +141,14 @@ class PdfReaderViewModel @Inject constructor(
         }
     }
 
+    fun goToPage(pageNumber: Int) {
+        val currentState = _uiState.value
+        val targetIndex = pageNumber - 1
+        if (targetIndex != currentState.currentPage && targetIndex in 0 until currentState.pageCount) {
+            loadPage(targetIndex)
+        }
+    }
+
     private fun loadPage(pageIndex: Int) {
         pageLoadJob?.cancel()
         pageLoadJob = viewModelScope.launch {

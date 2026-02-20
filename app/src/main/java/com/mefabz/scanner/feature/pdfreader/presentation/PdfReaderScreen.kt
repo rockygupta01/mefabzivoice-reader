@@ -27,6 +27,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -69,9 +78,58 @@ fun PdfReaderScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showPageDialog by remember { mutableStateOf(false) }
+    var pageInput by remember { mutableStateOf("") }
 
     LaunchedEffect(uri) {
         viewModel.loadPdf(uri)
+    }
+
+    if (showPageDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPageDialog = false
+                pageInput = ""
+            },
+            title = { Text("Go to Page") },
+            text = {
+                OutlinedTextField(
+                    value = pageInput,
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                            pageInput = newValue
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text("Page Number (1-${uiState.pageCount})") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val pageNum = pageInput.toIntOrNull()
+                        if (pageNum != null && pageNum in 1..uiState.pageCount) {
+                            viewModel.goToPage(pageNum)
+                        }
+                        showPageDialog = false
+                        pageInput = ""
+                    }
+                ) {
+                    Text("Go")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPageDialog = false
+                        pageInput = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -149,7 +207,10 @@ fun PdfReaderScreen(
                         Text(
                             text = "Page ${uiState.currentPage + 1} of ${uiState.pageCount}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable { showPageDialog = true }
+                                .padding(8.dp)
                         )
 
                         Button(
