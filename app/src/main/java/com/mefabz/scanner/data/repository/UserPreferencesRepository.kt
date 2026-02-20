@@ -23,6 +23,7 @@ class UserPreferencesRepository @Inject constructor(
     private val LANGUAGE_ACCENT_KEY = stringPreferencesKey("language_accent")
     private val IS_DARK_MODE_KEY = booleanPreferencesKey("is_dark_mode")
     private val SPEECH_RATE_KEY = floatPreferencesKey("speech_rate")
+    private val INVOICE_PREFIXES_KEY = stringPreferencesKey("invoice_prefixes")
 
     val languageAccentFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
@@ -37,6 +38,11 @@ class UserPreferencesRepository @Inject constructor(
     val speechRateFlow: Flow<Float> = context.dataStore.data
         .map { preferences ->
             preferences[SPEECH_RATE_KEY] ?: 1.0f // Default to 1x speed
+        }
+
+    val invoicePrefixesFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[INVOICE_PREFIXES_KEY] ?: "MEFABZ" // Default to MEFABZ
         }
 
     suspend fun saveLanguageAccent(accentCode: String) {
@@ -54,6 +60,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun saveSpeechRate(rate: Float) {
         context.dataStore.edit { preferences ->
             preferences[SPEECH_RATE_KEY] = rate
+        }
+    }
+
+    suspend fun saveInvoicePrefixes(prefixes: String) {
+        context.dataStore.edit { preferences ->
+            preferences[INVOICE_PREFIXES_KEY] = prefixes
         }
     }
 }

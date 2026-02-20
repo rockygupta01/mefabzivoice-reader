@@ -196,25 +196,30 @@ class PdfReaderViewModel @Inject constructor(
             parsePage(pageIndex, bitmap)
         }
 
+        val validPrefixes = userPreferencesRepository.invoicePrefixesFlow.first()
+            .split(",").map { it.trim().uppercase() }.filter { it.isNotBlank() }.ifEmpty { listOf("MEFABZ") }
+        val firstPrefix = validPrefixes.first()
+
         when (result) {
             is ParseInvoiceResult.Success -> {
-                val narrationPayload = buildNarrationUseCase(
+                val narrationResult = buildNarrationUseCase(
                     products = result.invoice.products,
-                    pageNumber = result.invoice.pageNumber
+                    pageNumber = result.invoice.pageNumber,
+                    brandName = firstPrefix
                 )
-                activeNarrationRanges = narrationPayload.productRanges
+                activeNarrationRanges = narrationResult.productRanges
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         error = null,
-                        extractedText = narrationPayload.narration,
+                        extractedText = narrationResult.narration,
                         detectedProducts = result.invoice.products,
                         detectedInvoicePage = result.invoice.pageNumber,
                         activeProductIndex = null
                     )
                 }
                 if (autoSpeak) {
-                    speak(narrationPayload.narration)
+                    speak(narrationResult.narration)
                 }
             }
 
@@ -318,9 +323,9 @@ class PdfReaderViewModel @Inject constructor(
 
     private fun errorText(error: InvoiceError): String {
         return when (error) {
-            InvoiceError.NonMefabz -> "This page is not a MEFABZ invoice page"
-            InvoiceError.NoProducts -> "No valid product descriptions found on this page"
-            InvoiceError.BlurryInvoice -> "Could not read page number from footer"
+            InvoiceError.NonMefabz -> "This page is not a valid invoice (Prefix missing)"
+            InvoiceError.NoProducts -> "No valid products found on this page"
+            InvoiceError.BlurryInvoice -> "Invoice seems blurry. Please try a clearer PDF"
             is InvoiceError.ApiFailure -> "Parsing failed: ${error.message}"
         }
     }

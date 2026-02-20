@@ -36,6 +36,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = 1.0f
         )
 
+    val invoicePrefixes: StateFlow<String> = userPreferencesRepository.invoicePrefixesFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "MEFABZ"
+        )
+
     fun onThemeChanged(isDark: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.saveThemeMode(isDark)
@@ -51,6 +58,12 @@ class SettingsViewModel @Inject constructor(
     fun onSpeechRateChanged(rate: Float) {
         viewModelScope.launch {
             userPreferencesRepository.saveSpeechRate(rate)
+        }
+    }
+
+    fun onInvoicePrefixesChanged(prefixes: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveInvoicePrefixes(prefixes)
         }
     }
 }

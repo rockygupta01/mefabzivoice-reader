@@ -5,10 +5,15 @@ import com.mefabz.scanner.feature.scanner.presentation.components.extractColorsF
 import javax.inject.Inject
 
 class BuildNarrationUseCase @Inject constructor() {
-    operator fun invoke(products: List<String>, pageNumber: String): NarrationPayload {
+    operator fun invoke(products: List<String>, pageNumber: String, brandName: String = "MEFABZ"): NarrationPayload {
         val colors = extractColorsFromProducts(products)
         val narration = buildString {
-            append("MEFABZ Invoice detected. Products listed are: ")
+            val formattedBrand = if (brandName.length >= 2) {
+                "${brandName[0].uppercaseChar()}${brandName.substring(1).lowercase()}"
+            } else {
+                brandName
+            }
+            append("$formattedBrand Invoice detected. Products listed are: ")
             products.forEach { append("$it, ") }
             append("Page ${pageNumber}.")
             if (colors.isNotEmpty()) {

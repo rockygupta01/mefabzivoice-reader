@@ -8,14 +8,18 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.mefabz.scanner.data.repository.UserPreferencesRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 @Singleton
-class OcrInvoiceDataSource @Inject constructor() {
+class OcrInvoiceDataSource @Inject constructor(
+    private val userPreferencesRepository: UserPreferencesRepository
+) {
 
     private val colorTruncationRegex = Regex(
         listOf("black", "white", "green", "grey", "gray", "brown", "red", "cream", "blue", "yellow", "pink", "purple", "orange")
@@ -46,11 +50,17 @@ class OcrInvoiceDataSource @Inject constructor() {
             throw IllegalStateException("No text found in invoice image")
         }
 
-        val brandDetected = lines.any { normalizedForBrand(it.text).contains("mefabz") }
+        val prefixesString = userPreferencesRepository.invoicePrefixesFlow.first()
+        val validPrefixes = parsePrefixes(prefixesString)
+
+        val brandDetected = lines.any { line ->
+            val normalizedLine = normalizedForBrand(line.text)
+            validPrefixes.any { prefix -> normalizedLine.contains(normalizedForBrand(prefix)) }
+        }
 
         return OcrInvoiceResponse(
             brandDetected = brandDetected,
-            products = extractProductCandidates(lines, bitmap.height),
+            products = extractProductCandidates(lines, bitmap.height, validPrefixes),
             pageNumber = extractFooterPageNumber(lines, bitmap.height).orEmpty()
         )
     }
@@ -74,16 +84,29 @@ class OcrInvoiceDataSource @Inject constructor() {
             throw IllegalStateException("No text found in invoice image")
         }
 
-        val brandDetected = lines.any { normalizedForBrand(it.text).contains("mefabz") }
+        val prefixesString = userPreferencesRepository.invoicePrefixesFlow.first()
+        val validPrefixes = parsePrefixes(prefixesString)
+
+        val brandDetected = lines.any { line ->
+            val normalizedLine = normalizedForBrand(line.text)
+            validPrefixes.any { prefix -> normalizedLine.contains(normalizedForBrand(prefix)) }
+        }
 
         return OcrInvoiceResponse(
             brandDetected = brandDetected,
-            products = extractProductCandidates(lines, bitmap.height),
+            products = extractProductCandidates(lines, bitmap.height, validPrefixes),
             pageNumber = extractFooterPageNumber(lines, bitmap.height).orEmpty()
         )
     }
 
-    private fun extractProductCandidates(lines: List<RecognizedLine>, imageHeight: Int): List<String> {
+    private fun parsePrefixes(raw: String): List<String> {
+        return raw.split(",")
+            .map { it.trim().uppercase() }
+            .filter { it.isNotBlank() }
+            .ifEmpty { listOf("MEFABZ") } // Fallback to MEFABZ if completely empty
+    }
+
+    private fun extractProductCandidates(lines: List<RecognizedLine>, imageHeight: Int, validPrefixes: List<String>): List<String> {
         val topLimit = (imageHeight * 0.12f).toInt()
         val bottomLimit = (imageHeight * 0.88f).toInt()
 
@@ -96,7 +119,10 @@ class OcrInvoiceDataSource @Inject constructor() {
             .map { cleanProductCandidate(it.text) }
             .filter(String::isNotBlank)
             .filterNot(::isLikelyNonProductLine)
-            .filter { it.trim().uppercase().startsWith("MEFABZ") }
+            .filter { candidate ->
+                val upperCandidate = candidate.trim().uppercase()
+                validPrefixes.any { prefix -> upperCandidate.startsWith(prefix) }
+            }
             .distinct()
             .toList()
     }

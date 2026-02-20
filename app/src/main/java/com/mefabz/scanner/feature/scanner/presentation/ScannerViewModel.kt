@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -37,6 +39,9 @@ class ScannerViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<ScannerEvent>()
     val events: SharedFlow<ScannerEvent> = _events.asSharedFlow()
+
+    private val validPrefixesFlow = userPreferencesRepository.invoicePrefixesFlow
+        .map { raw -> raw.split(",").map { it.trim().uppercase() }.filter { it.isNotBlank() }.ifEmpty { listOf("MEFABZ") } }
 
     private var activeNarrationRanges: List<IntRange> = emptyList()
 
@@ -63,6 +68,12 @@ class ScannerViewModel @Inject constructor(
 
             when (val result = parseInvoiceUseCase(imageBytes)) {
                 is ParseInvoiceResult.Success -> {
+                    val firstPrefix = validPrefixesFlow.first().firstOrNull() ?: "MEFABZ"
+                    val narrationResult = buildNarrationUseCase(
+                        result.invoice.products,
+                        result.invoice.pageNumber,
+                        firstPrefix
+                    )
                     _uiState.update {
                         it.copy(
                             scanState = ScanState.Parsed,
@@ -133,8 +144,8 @@ class ScannerViewModel @Inject constructor(
 
     fun errorLabel(reason: InvoiceError): String {
         return when (reason) {
-            InvoiceError.NonMefabz -> "This is not a genuine MEFABZ invoice"
-            InvoiceError.NoProducts -> "No valid product descriptions were found"
+            InvoiceError.NonMefabz -> "This is not a genuine invoice (Prefix missing)"
+            InvoiceError.NoProducts -> "No valid products found on this invoice"
             InvoiceError.BlurryInvoice -> "Invoice seems blurry. Please capture again"
             is InvoiceError.ApiFailure -> "Invoice parsing failed: ${reason.message}"
         }
