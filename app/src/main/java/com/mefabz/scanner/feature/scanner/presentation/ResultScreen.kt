@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.mefabz.scanner.feature.scanner.presentation.components.VoiceWaveform
 import com.mefabz.scanner.feature.scanner.presentation.components.buildColorHighlightedString
+import com.mefabz.scanner.feature.scanner.presentation.components.extractColorsFromProducts
 import com.mefabz.scanner.ui.theme.Ink
 import com.mefabz.scanner.ui.theme.NeonCyan
 import com.mefabz.scanner.ui.theme.Slate800
@@ -93,6 +94,19 @@ fun ResultScreen(
                         shadow = Shadow(color = NeonCyan.copy(alpha = 0.9f), blurRadius = 28f)
                     )
                 )
+
+                val colors = extractColorsFromProducts(invoice.products)
+                if (colors.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Color: ${colors.joinToString(", ")}",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = NeonCyan,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 

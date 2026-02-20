@@ -22,6 +22,22 @@ private val colorStyleMap = mapOf(
     "orange" to SpanStyle(color = Color(0xFFFB923C))
 )
 
+val SUPPORTED_COLORS = colorStyleMap.keys.toList()
+
+fun extractColorsFromProducts(products: List<String>): List<String> {
+    val detected = mutableSetOf<String>()
+    for (product in products) {
+        val lowerProduct = product.lowercase()
+        for (color in SUPPORTED_COLORS) {
+            // Check for color as a whole word to avoid partial matches
+            if (Regex("\\b$color\\b").containsMatchIn(lowerProduct)) {
+                detected.add(color.replaceFirstChar { it.uppercase() })
+            }
+        }
+    }
+    return detected.toList()
+}
+
 fun buildColorHighlightedString(text: String, baseColor: Color): AnnotatedString {
     return buildAnnotatedString {
         val pattern = colorStyleMap.keys.joinToString("|", prefix = "\\b(", postfix = ")\\b")

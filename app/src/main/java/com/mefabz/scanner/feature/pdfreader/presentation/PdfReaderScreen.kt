@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mefabz.scanner.feature.scanner.presentation.components.VoiceWaveform
 import com.mefabz.scanner.feature.scanner.presentation.components.buildColorHighlightedString
+import com.mefabz.scanner.feature.scanner.presentation.components.extractColorsFromProducts
 import com.mefabz.scanner.ui.theme.Ink
 import com.mefabz.scanner.ui.theme.NeonCyan
 import com.mefabz.scanner.ui.theme.Slate800
@@ -218,6 +219,16 @@ fun PdfReaderScreen(
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
+                            val colors = extractColorsFromProducts(uiState.detectedProducts)
+                            if (colors.isNotEmpty()) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "Color: ${colors.joinToString(", ")}",
+                                    color = NeonCyan,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                             Spacer(Modifier.height(8.dp))
                             androidx.compose.foundation.lazy.LazyColumn(
                                 modifier = Modifier.fillMaxSize()

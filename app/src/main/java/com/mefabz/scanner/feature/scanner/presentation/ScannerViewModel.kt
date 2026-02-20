@@ -89,12 +89,7 @@ class ScannerViewModel @Inject constructor(
 
         _uiState.update { it.copy(speechState = SpeechState.Speaking(activeProductIndex = null)) }
 
-        val narration = buildString {
-            append("MEFABZ Invoice detected. Products listed are: ")
-            invoice.products.forEach { append("$it, ") }
-            append("Page ${invoice.pageNumber}.")
-        }
-        ttsManager.speak(narration)
+        ttsManager.speak(narrationPayload.narration)
     }
 
     fun stopNarration() {
