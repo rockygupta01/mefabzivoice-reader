@@ -110,21 +110,44 @@ class OcrInvoiceDataSource @Inject constructor(
         val topLimit = (imageHeight * 0.12f).toInt()
         val bottomLimit = (imageHeight * 0.88f).toInt()
 
-        return lines
-            .asSequence()
-            .filter { line ->
-                val centerY = line.box?.centerY() ?: (imageHeight / 2)
-                centerY in topLimit..bottomLimit
+        val validLines = lines.filter { line ->
+            val centerY = line.box?.centerY() ?: (imageHeight / 2)
+            centerY in topLimit..bottomLimit
+        }
+
+        val products = mutableListOf<String>()
+        var i = 0
+
+        while (i < validLines.size) {
+            val lineText = validLines[i].text
+            val upperLine = lineText.trim().uppercase()
+
+            if (validPrefixes.any { prefix -> upperLine.startsWith(prefix) }) {
+                var rawProductText = lineText
+                
+                // Check if this line already contains a color
+                val hasColorAlready = colorTruncationRegex.containsMatchIn(rawProductText)
+
+                // If no color was found, peek at the next line
+                if (!hasColorAlready && i + 1 < validLines.size) {
+                    val nextLineText = validLines[i + 1].text.trim()
+                    
+                    if (colorTruncationRegex.containsMatchIn(nextLineText)) {
+                        // Color found on next line, append it
+                        rawProductText = "$rawProductText $nextLineText"
+                        i++ // Skip processing the next line as a standalone string
+                    }
+                }
+
+                val cleaned = cleanProductCandidate(rawProductText)
+                if (cleaned.isNotBlank() && !isLikelyNonProductLine(cleaned)) {
+                    products.add(cleaned)
+                }
             }
-            .map { cleanProductCandidate(it.text) }
-            .filter(String::isNotBlank)
-            .filterNot(::isLikelyNonProductLine)
-            .filter { candidate ->
-                val upperCandidate = candidate.trim().uppercase()
-                validPrefixes.any { prefix -> upperCandidate.startsWith(prefix) }
-            }
-            .distinct()
-            .toList()
+            i++
+        }
+
+        return products.distinct()
     }
 
     private fun extractFooterPageNumber(lines: List<RecognizedLine>, imageHeight: Int): String? {
