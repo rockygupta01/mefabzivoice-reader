@@ -40,7 +40,14 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "MEFABZ"
+            initialValue = ""
+        )
+
+    val invoiceSuffixes: StateFlow<String> = userPreferencesRepository.invoiceSuffixesFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
         )
 
     fun onThemeChanged(isDark: Boolean) {
@@ -64,6 +71,12 @@ class SettingsViewModel @Inject constructor(
     fun onInvoicePrefixesChanged(prefixes: String) {
         viewModelScope.launch {
             userPreferencesRepository.saveInvoicePrefixes(prefixes)
+        }
+    }
+
+    fun onInvoiceSuffixesChanged(suffixes: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveInvoiceSuffixes(suffixes)
         }
     }
 }

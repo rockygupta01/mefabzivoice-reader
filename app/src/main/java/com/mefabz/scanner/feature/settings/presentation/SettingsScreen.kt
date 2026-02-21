@@ -56,6 +56,7 @@ fun SettingsScreen(
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val speechRate by viewModel.speechRate.collectAsStateWithLifecycle()
     val invoicePrefixes by viewModel.invoicePrefixes.collectAsStateWithLifecycle()
+    val invoiceSuffixes by viewModel.invoiceSuffixes.collectAsStateWithLifecycle()
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -295,7 +296,42 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Comma-separated prefixes used to identify valid products on invoices.",
+                        text = "Comma-separated prefixes used to identify valid product lines.",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Valid Invoice Suffixes (Colors/Variants)",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = invoiceSuffixes,
+                        onValueChange = { viewModel.onInvoiceSuffixesChanged(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("e.g. black, blue, red") },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = NeonCyan,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = NeonCyan
+                        ),
+                        singleLine = false,
+                        maxLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Comma-separated suffixes the scanner will look for on the next line.",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontSize = 12.sp,
                         lineHeight = 16.sp,

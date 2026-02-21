@@ -21,11 +21,6 @@ class OcrInvoiceDataSource @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) {
 
-    private val colorTruncationRegex = Regex(
-        listOf("black", "white", "green", "grey", "gray", "brown", "red", "cream", "blue", "yellow", "pink", "purple", "orange")
-            .joinToString("|", prefix = "(?i)\\b(", postfix = ")\\b\\s*[)\\]]?")
-    )
-
     private val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     suspend fun parseInvoice(imageBytes: ByteArray): OcrInvoiceResponse {
@@ -53,6 +48,9 @@ class OcrInvoiceDataSource @Inject constructor(
         val prefixesString = userPreferencesRepository.invoicePrefixesFlow.first()
         val validPrefixes = parsePrefixes(prefixesString)
 
+        val suffixesString = userPreferencesRepository.invoiceSuffixesFlow.first()
+        val suffixRegex = buildSuffixRegex(suffixesString)
+
         val brandDetected = lines.any { line ->
             val normalizedLine = normalizedForBrand(line.text)
             validPrefixes.any { prefix -> normalizedLine.contains(normalizedForBrand(prefix)) }
@@ -60,7 +58,7 @@ class OcrInvoiceDataSource @Inject constructor(
 
         return OcrInvoiceResponse(
             brandDetected = brandDetected,
-            products = extractProductCandidates(lines, bitmap.height, validPrefixes),
+            products = extractProductCandidates(lines, bitmap.height, validPrefixes, suffixRegex),
             pageNumber = extractFooterPageNumber(lines, bitmap.height).orEmpty()
         )
     }
@@ -87,6 +85,9 @@ class OcrInvoiceDataSource @Inject constructor(
         val prefixesString = userPreferencesRepository.invoicePrefixesFlow.first()
         val validPrefixes = parsePrefixes(prefixesString)
 
+        val suffixesString = userPreferencesRepository.invoiceSuffixesFlow.first()
+        val suffixRegex = buildSuffixRegex(suffixesString)
+
         val brandDetected = lines.any { line ->
             val normalizedLine = normalizedForBrand(line.text)
             validPrefixes.any { prefix -> normalizedLine.contains(normalizedForBrand(prefix)) }
@@ -94,7 +95,7 @@ class OcrInvoiceDataSource @Inject constructor(
 
         return OcrInvoiceResponse(
             brandDetected = brandDetected,
-            products = extractProductCandidates(lines, bitmap.height, validPrefixes),
+            products = extractProductCandidates(lines, bitmap.height, validPrefixes, suffixRegex),
             pageNumber = extractFooterPageNumber(lines, bitmap.height).orEmpty()
         )
     }
@@ -106,7 +107,26 @@ class OcrInvoiceDataSource @Inject constructor(
             .ifEmpty { listOf("MEFABZ") } // Fallback to MEFABZ if completely empty
     }
 
-    private fun extractProductCandidates(lines: List<RecognizedLine>, imageHeight: Int, validPrefixes: List<String>): List<String> {
+    private fun buildSuffixRegex(raw: String): Regex {
+        val suffixes = raw.split(",")
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+            
+        if (suffixes.isEmpty()) {
+            return Regex("(?!)") // Matches nothing if completely empty
+        }
+        
+        return Regex(
+            suffixes.joinToString("|", prefix = "(?i)\\b(", postfix = ")\\b\\s*[)\\]]?")
+        )
+    }
+
+    private fun extractProductCandidates(
+        lines: List<RecognizedLine>, 
+        imageHeight: Int, 
+        validPrefixes: List<String>,
+        suffixRegex: Regex
+    ): List<String> {
         val topLimit = (imageHeight * 0.12f).toInt()
         val bottomLimit = (imageHeight * 0.88f).toInt()
 
@@ -125,21 +145,21 @@ class OcrInvoiceDataSource @Inject constructor(
             if (validPrefixes.any { prefix -> upperLine.startsWith(prefix) }) {
                 var rawProductText = lineText
                 
-                // Check if this line already contains a color
-                val hasColorAlready = colorTruncationRegex.containsMatchIn(rawProductText)
+                // Check if this line already contains a color/suffix
+                val hasColorAlready = suffixRegex.containsMatchIn(rawProductText)
 
                 // If no color was found, peek at the next line
                 if (!hasColorAlready && i + 1 < validLines.size) {
                     val nextLineText = validLines[i + 1].text.trim()
                     
-                    if (colorTruncationRegex.containsMatchIn(nextLineText)) {
+                    if (suffixRegex.containsMatchIn(nextLineText)) {
                         // Color found on next line, append it
                         rawProductText = "$rawProductText $nextLineText"
                         i++ // Skip processing the next line as a standalone string
                     }
                 }
 
-                val cleaned = cleanProductCandidate(rawProductText)
+                val cleaned = cleanProductCandidate(rawProductText, suffixRegex)
                 if (cleaned.isNotBlank() && !isLikelyNonProductLine(cleaned)) {
                     products.add(cleaned)
                 }
@@ -174,13 +194,13 @@ class OcrInvoiceDataSource @Inject constructor(
             .firstOrNull { it.matches(Regex("^\\d+$")) }
     }
 
-    private fun cleanProductCandidate(raw: String): String {
+    private fun cleanProductCandidate(raw: String, suffixRegex: Regex): String {
         var cleaned = raw
             .replace(Regex("^\\d+[.)-]?\\s*"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
 
-        val colorMatch = colorTruncationRegex.find(cleaned)
+        val colorMatch = suffixRegex.find(cleaned)
         if (colorMatch != null) {
             cleaned = cleaned.substring(0, colorMatch.range.last + 1).trim()
         }
