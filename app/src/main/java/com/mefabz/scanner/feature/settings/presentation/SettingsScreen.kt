@@ -35,6 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +60,13 @@ fun SettingsScreen(
     val speechRate by viewModel.speechRate.collectAsStateWithLifecycle()
     val invoicePrefixes by viewModel.invoicePrefixes.collectAsStateWithLifecycle()
     val invoiceSuffixes by viewModel.invoiceSuffixes.collectAsStateWithLifecycle()
+    
+    var localPrefixes by remember { mutableStateOf(invoicePrefixes) }
+    var localSuffixes by remember { mutableStateOf(invoiceSuffixes) }
+
+    // Sync local state when the flow updates from datastore initially
+    LaunchedEffect(invoicePrefixes) { localPrefixes = invoicePrefixes }
+    LaunchedEffect(invoiceSuffixes) { localSuffixes = invoiceSuffixes }
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -279,8 +289,8 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = invoicePrefixes,
-                        onValueChange = { viewModel.onInvoicePrefixesChanged(it) },
+                        value = localPrefixes,
+                        onValueChange = { localPrefixes = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("e.g. MEFABZ, INVOICE, ABC") },
                         colors = TextFieldDefaults.colors(
@@ -295,13 +305,32 @@ fun SettingsScreen(
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Comma-separated prefixes used to identify valid product lines.",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Comma-separated prefixes used to identify valid product lines.",
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.weight(1f).padding(start = 4.dp, end = 8.dp)
+                        )
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.onInvoicePrefixesChanged(localPrefixes)
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("Prefixes saved")
+                                }
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = NeonCyan)
+                        ) {
+                            Text("Save", color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -313,8 +342,8 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = invoiceSuffixes,
-                        onValueChange = { viewModel.onInvoiceSuffixesChanged(it) },
+                        value = localSuffixes,
+                        onValueChange = { localSuffixes = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("e.g. black, blue, red") },
                         colors = TextFieldDefaults.colors(
@@ -330,13 +359,32 @@ fun SettingsScreen(
                         maxLines = 3
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Comma-separated suffixes the scanner will look for on the next line.",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Comma-separated suffixes the scanner will look for on the next line.",
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.weight(1f).padding(start = 4.dp, end = 8.dp)
+                        )
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.onInvoiceSuffixesChanged(localSuffixes)
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("Suffixes saved")
+                                }
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = NeonCyan)
+                        ) {
+                            Text("Save", color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    }
                 }
             }
             
