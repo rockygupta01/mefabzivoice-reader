@@ -69,7 +69,12 @@ class GoogleTtsManager @Inject constructor(
         }
         
         try {
-            textToSpeech?.language = locale
+            val result = textToSpeech?.isLanguageAvailable(locale)
+            if (result == TextToSpeech.LANG_AVAILABLE || result == TextToSpeech.LANG_COUNTRY_AVAILABLE || result == TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE) {
+                textToSpeech?.language = locale
+            } else {
+                textToSpeech?.language = Locale.US
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

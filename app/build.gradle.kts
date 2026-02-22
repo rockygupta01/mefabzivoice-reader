@@ -24,9 +24,19 @@ android {
 
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.jks")
+            storePassword = "mefabz123"
+            keyAlias = "release_key"
+            keyPassword = "mefabz123"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -79,8 +89,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.google.material)
     implementation(libs.androidx.navigation.compose)
-    implementation("androidx.compose.material:material-icons-core:1.7.0")
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)

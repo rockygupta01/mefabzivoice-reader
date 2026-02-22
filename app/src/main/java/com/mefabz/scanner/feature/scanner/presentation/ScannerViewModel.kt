@@ -49,6 +49,8 @@ class ScannerViewModel @Inject constructor(
         ttsManager.setListener(this)
     }
 
+    private var scanJob: kotlinx.coroutines.Job? = null
+    
     fun onCaptureStarted() {
         _uiState.update { it.copy(scanState = ScanState.Capturing) }
     }
@@ -58,7 +60,8 @@ class ScannerViewModel @Inject constructor(
     }
 
     fun processCapturedInvoice(imageBytes: ByteArray, imageUri: String) {
-        viewModelScope.launch(ioDispatcher) {
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch(ioDispatcher) {
             _uiState.update {
                 it.copy(
                     scanState = ScanState.Processing,
@@ -114,6 +117,7 @@ class ScannerViewModel @Inject constructor(
     }
 
     fun resetForRescan() {
+        scanJob?.cancel()
         stopNarration()
         activeNarrationRanges = emptyList()
         _uiState.value = ScannerUiState()
