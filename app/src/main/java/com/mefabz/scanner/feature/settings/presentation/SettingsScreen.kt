@@ -15,9 +15,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.SettingsSuggest
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -95,13 +101,21 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Appearance Section
-            Text(
-                text = "Appearance",
-                color = NeonCyan,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = null,
+                    tint = NeonCyan,
+                    modifier = Modifier.padding(bottom = 8.dp, start = 4.dp, end = 8.dp)
+                )
+                Text(
+                    text = "Appearance",
+                    color = NeonCyan,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
@@ -139,13 +153,21 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Voice Narration Accent Section
-            Text(
-                text = "Voice Narration Accent",
-                color = NeonCyan,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.RecordVoiceOver,
+                    contentDescription = null,
+                    tint = NeonCyan,
+                    modifier = Modifier.padding(bottom = 8.dp, start = 4.dp, end = 8.dp)
+                )
+                Text(
+                    text = "Voice Narration Accent",
+                    color = NeonCyan,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
@@ -202,13 +224,21 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Speech Speed Section
-            Text(
-                text = "Speech Speed",
-                color = NeonCyan,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Speed,
+                    contentDescription = null,
+                    tint = NeonCyan,
+                    modifier = Modifier.padding(bottom = 8.dp, start = 4.dp, end = 8.dp)
+                )
+                Text(
+                    text = "Speech Speed",
+                    color = NeonCyan,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
@@ -262,13 +292,21 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Extraction Settings Section
-            Text(
-                text = "Extraction Settings",
-                color = NeonCyan,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.SettingsSuggest,
+                    contentDescription = null,
+                    tint = NeonCyan,
+                    modifier = Modifier.padding(bottom = 8.dp, start = 4.dp, end = 8.dp)
+                )
+                Text(
+                    text = "Extraction Settings",
+                    color = NeonCyan,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(

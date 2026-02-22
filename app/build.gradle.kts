@@ -90,6 +90,7 @@ dependencies {
     implementation(libs.google.material)
     implementation(libs.androidx.navigation.compose)
     implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation("androidx.datastore:datastore-preferences:1.2.0")
 
     implementation(libs.hilt.android)
